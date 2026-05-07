@@ -1,0 +1,105 @@
+{
+  "additional_attributes": {},
+  "can_reply": true,
+  "channel": "Channel::Api",
+  "contact_inbox": {
+    "id": 1025157,
+    "contact_id": 600273,
+    "inbox_id": 2478,
+    "source_id": "cb9ec659-604c-4b14-b421-284a7317d7c0",
+    "created_at": "2026-04-27T12:52:45.950Z",
+    "updated_at": "2026-04-27T12:52:45.950Z",
+    "hmac_verified": false,
+    "pubsub_token": "LAhyDWstB78inVPWXEuyU76D"
+  },
+  "id": 4384,
+  "inbox_id": 2478,
+  "messages": [
+    {
+      "id": 16697356,
+      "content": "[AGENT] Temos sim, trabalhamos com a Kikos, principalmente na linha de cardio e também alguns modelos de musculação.\n\nVocê está procurando qual equipamento específico da Kikos? É para essa mesma academia em Cotia?",
+      "account_id": 1158,
+      "inbox_id": 2478,
+      "conversation_id": 4384,
+      "message_type": 1,
+      "created_at": 1777296238,
+      "updated_at": "2026-04-27T13:23:58.214Z",
+      "private": false,
+      "status": "sent",
+      "source_id": null,
+      "content_type": "text",
+      "content_attributes": {},
+      "sender_type": "User",
+      "sender_id": 1269,
+      "external_source_ids": {},
+      "additional_attributes": {},
+      "processed_message_content": "[AGENT] Temos sim, trabalhamos com a Kikos, principalmente na linha de cardio e também alguns modelos de musculação.\n\nVocê está procurando qual equipamento específico da Kikos? É para essa mesma academia em Cotia?",
+      "sentiment": {},
+      "conversation": {
+        "assignee_id": 4816,
+        "unread_count": 10,
+        "last_activity_at": 1777296440,
+        "contact_inbox": {
+          "source_id": "cb9ec659-604c-4b14-b421-284a7317d7c0"
+        }
+      },
+      "sender": {
+        "id": 1269,
+        "name": "Toolzz AI",
+        "available_name": "Toolzz AI",
+        "avatar_url": "https://chat.toolzz.ai/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBNUFIQWc9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--c0d16f9673dbe233c2cc861e879fdfaefa60d155/pngtree-cute-robot-mascot-logo-png-image_8493119.png",
+        "type": "user",
+        "availability_status": null,
+        "thumbnail": "https://chat.toolzz.ai/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBNUFIQWc9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--c0d16f9673dbe233c2cc861e879fdfaefa60d155/pngtree-cute-robot-mascot-logo-png-image_8493119.png",
+        "bot_id": null
+      }
+    }
+  ],
+  "labels": [],
+  "meta": {
+    "sender": {
+      "additional_attributes": {},
+      "custom_attributes": {},
+      "email": null,
+      "cpf": null,
+      "id": 600273,
+      "identifier": null,
+      "name": "kigutig",
+      "phone_number": "+5511939554251",
+      "thumbnail": "",
+      "company_ids": [],
+      "companies": [],
+      "type": "contact"
+    },
+    "assignee": {
+      "id": 4816,
+      "name": "Gabriel Kiguti",
+      "available_name": "Gabriel Kiguti",
+      "avatar_url": "",
+      "type": "user",
+      "availability_status": null,
+      "thumbnail": "",
+      "bot_id": null
+    },
+    "team": null,
+    "hmac_verified": false
+  },
+  "status": "pending",
+  "custom_attributes": {
+    "service": "WHATSAPP",
+    "session_id": "cb9ec659-604c-4b14-b421-284a7317d7c0",
+    "service_provider": "Z-API",
+    "sender_identifier": "+5511939554251"
+  },
+  "snoozed_until": null,
+  "unread_count": 10,
+  "first_reply_created_at": "2026-04-27T12:53:13.442Z",
+  "priority": null,
+  "waiting_since": 0,
+  "agent_last_seen_at": 0,
+  "contact_last_seen_at": 0,
+  "last_activity_at": 1777296440,
+  "timestamp": 1777296440,
+  "created_at": 1777294366,
+  "event": "automation_event.conversation_updated"
+}
