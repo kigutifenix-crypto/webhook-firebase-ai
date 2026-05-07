@@ -19,10 +19,20 @@ if (admin.apps.length > 0) {
   console.error('❌ Firebase não inicializado. Certifique-se de que src/server.js inicializou o Firebase.');
 }
 
-// Inicializar Groq (GRATUITO)
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Inicializar Groq (GRATUITO) - Lazy load
+let groq = null;
+
+function getGroqClient() {
+  if (!groq) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY não configurada. Configure a variável de ambiente GROQ_API_KEY no Railway.');
+    }
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+  }
+  return groq;
+}
 
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 
@@ -176,7 +186,7 @@ async function analyzeConversation(conversationId, conversationData) {
     'Retorne APENAS o JSON, sem markdown ou explicações.';
 
   try {
-    const chatCompletion = await groq.chat.completions.create({
+    const chatCompletion = await getGroqClient().chat.completions.create({
       messages: [
         {
           role: 'system',
