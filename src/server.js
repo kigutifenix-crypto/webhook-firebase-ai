@@ -64,10 +64,14 @@ try {
   console.log('✅ Firebase inicializado com sucesso');
 } catch (error) {
   console.error('❌ Erro ao inicializar Firebase:', error);
-  process.exit(1);
+  console.error('⚠️  Certifique-se de configurar as variáveis de ambiente FIREBASE_* no Railway');
+  // Não sair, permitir que o app inicie mesmo sem Firebase para facilitar deploy
 }
 
-const db = admin.database();
+let db = null;
+if (admin.apps.length > 0) {
+  db = admin.database();
+}
 
 // ============================================
 // VALIDAÇÃO DE WEBHOOK (Formato Toolz)
@@ -105,6 +109,14 @@ function validarWebhook(dados) {
 // ============================================
 app.post('/webhook', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(503).json({
+        sucesso: false,
+        erro: 'Firebase não inicializado. Configure as variáveis de ambiente.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const validacao = validarWebhook(req.body);
     
     if (!validacao.valido) {
@@ -239,6 +251,14 @@ app.post('/webhook', async (req, res) => {
 // ============================================
 app.get('/conversation/:id', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(503).json({
+        sucesso: false,
+        erro: 'Firebase não inicializado. Configure as variáveis de ambiente.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const { id } = req.params;
     const snapshot = await db.ref(`conversations/${id}`).get();
     
@@ -268,6 +288,14 @@ app.get('/conversation/:id', async (req, res) => {
 // ============================================
 app.get('/conversations', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(503).json({
+        sucesso: false,
+        erro: 'Firebase não inicializado. Configure as variáveis de ambiente.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const snapshot = await db.ref('conversations').limitToLast(50).get();
     
     if (!snapshot.exists()) {
@@ -306,6 +334,14 @@ app.get('/conversations', async (req, res) => {
 // ============================================
 app.post('/analyze/:id', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(503).json({
+        sucesso: false,
+        erro: 'Firebase não inicializado. Configure as variáveis de ambiente.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const conversationId = req.params.id;
     const snapshot = await db.ref(`conversations/${conversationId}`).get();
     if (!snapshot.exists()) {
@@ -347,6 +383,14 @@ app.post('/analyze/:id', async (req, res) => {
 // ============================================
 app.post('/analyze', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(503).json({
+        sucesso: false,
+        erro: 'Firebase não inicializado. Configure as variáveis de ambiente.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const results = await aiAnalyzer.analyzeAllConversations();
     return res.status(200).json({
       sucesso: true,
