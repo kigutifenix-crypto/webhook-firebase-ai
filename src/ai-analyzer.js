@@ -131,6 +131,40 @@ function buildFallbackSummary(conversationText, metadata, analysisResult) {
 }
 
 /**
+ * Chamada ao Groq com retry exponencial para rate limiting
+ */
+async function callGroqWithRetry(messages, maxRetries = 5) {
+  let lastError = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await getGroqClient().chat.completions.create({
+        messages,
+        model: GROQ_MODEL,
+        temperature: 0.1,
+        max_tokens: 512, // Reduzido de 1024 para economizar tokens
+      });
+    } catch (error) {
+      lastError = error;
+      
+      // Verificar se é um erro de rate limit (429)
+      if (error.status === 429 || error.code === 'rate_limit_exceeded') {
+        const waitTime = Math.pow(2, attempt) * 1000; // Backoff exponencial: 1s, 2s, 4s, 8s, 16s
+        console.warn(`⚠️  Rate limit atingido. Tentativa ${attempt + 1}/${maxRetries}. Aguardando ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      // Se não for rate limit, lançar o erro
+      throw error;
+    }
+  }
+  
+  // Se chegou aqui, esgotou as tentativas
+  throw lastError;
+}
+
+/**
  * Analisa uma conversa com Groq
  */
 async function analyzeConversation(conversationId, conversationData) {
@@ -187,21 +221,16 @@ async function analyzeConversation(conversationId, conversationData) {
     'Retorne APENAS o JSON, sem markdown ou explicações.';
 
   try {
-    const chatCompletion = await getGroqClient().chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'Você é um extrator de dados. Responda apenas com JSON válido e nada mais.'
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      model: GROQ_MODEL,
-      temperature: 0.1,
-      max_tokens: 1024,
-    });
+    const chatCompletion = await callGroqWithRetry([
+      {
+        role: 'system',
+        content: 'Você é um extrator de dados. Responda apenas com JSON válido e nada mais.'
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ]);
 
     const responseText = chatCompletion.choices[0]?.message?.content || '';
 
@@ -273,7 +302,14 @@ async function analyzeConversation(conversationId, conversationData) {
 
     return analysisResult;
   } catch (error) {
-    console.error(`Erro ao analisar conversa ${conversationId}:`, error.message);
+    // Verificar se é erro de rate limit
+    const isRateLimit = error.status === 429 || error.code === 'rate_limit_exceeded' || error.message?.includes('rate_limit');
+    if (isRateLimit) {
+      console.error(`❌ Erro ao analisar conversa ${conversationId}: Rate limit do Groq atingido. ${error.message}`);
+    } else {
+      console.error(`❌ Erro ao analisar conversa ${conversationId}:`, error.message);
+    }
+    
     return {
       conversationId,
       nome: conversationData.sender?.name || '',
@@ -366,8 +402,8 @@ async function analyzeAllConversations() {
       const analysis = await analyzeConversation(convId, convData);
       analysisResults.push(analysis);
 
-      // Delay para não sobrecarregar a API (rate limiting)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Delay aumentado para evitar rate limiting (2 segundos entre análises)
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     // Salvar em Google Sheets
