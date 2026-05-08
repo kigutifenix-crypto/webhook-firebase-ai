@@ -386,11 +386,23 @@ app.post('/analyze/:id', async (req, res) => {
   }
 });
 
+// Status da análise em andamento
+let analysisStatus = {
+  inProgress: false,
+  progress: 0,
+  total: 0,
+  current: '',
+  error: null,
+  startTime: null,
+  results: null
+};
+
 // ============================================
 // ROTA: ANALISAR TODAS AS CONVERSAS
 // ============================================
 app.post('/analyze', async (req, res) => {
   console.log('📡 Recebida requisição POST /analyze');
+
   try {
     if (!db) {
       console.error('❌ Firebase não inicializado no servidor');
@@ -401,17 +413,51 @@ app.post('/analyze', async (req, res) => {
       });
     }
 
-    console.log('🔍 Iniciando análise de todas as conversas...');
-    const results = await aiAnalyzer.analyzeAllConversations();
-    console.log(`✅ Análise concluída. ${results?.length || 0} conversas analisadas`);
+    // Verificar se já há uma análise em andamento
+    if (analysisStatus.inProgress) {
+      return res.status(409).json({
+        sucesso: false,
+        erro: 'Análise já em andamento. Aguarde a conclusão.',
+        status: analysisStatus,
+        timestamp: new Date().toISOString()
+      });
+    }
 
-    return res.status(200).json({
+    // Iniciar análise em background
+    analysisStatus = {
+      inProgress: true,
+      progress: 0,
+      total: 0,
+      current: 'Iniciando...',
+      error: null,
+      startTime: new Date(),
+      results: null
+    };
+
+    // Executar análise em background (não bloquear a resposta)
+    analyzeAllConversationsBackground();
+
+    console.log('🚀 Análise iniciada em background');
+
+    return res.status(202).json({
       sucesso: true,
-      results,
+      mensagem: 'Análise iniciada em background',
+      status: analysisStatus,
       timestamp: new Date().toISOString()
     });
+
   } catch (erro) {
-    console.error('❌ Erro ao analisar todas as conversas:', erro);
+    console.error('❌ Erro ao iniciar análise:', erro);
+    analysisStatus = {
+      inProgress: false,
+      progress: 0,
+      total: 0,
+      current: '',
+      error: erro.message,
+      startTime: null,
+      results: null
+    };
+
     return res.status(500).json({
       sucesso: false,
       erro: erro.message,
@@ -419,6 +465,47 @@ app.post('/analyze', async (req, res) => {
     });
   }
 });
+
+// ============================================
+// ROTA: STATUS DA ANÁLISE
+// ============================================
+app.get('/analyze/status', (req, res) => {
+  return res.json({
+    ...analysisStatus,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Função para executar análise em background
+async function analyzeAllConversationsBackground() {
+  try {
+    console.log('🔍 Iniciando análise de todas as conversas em background...');
+
+    // Callback para atualizar o progresso
+    const onProgress = (status) => {
+      analysisStatus.progress = status.progress;
+      analysisStatus.total = status.total;
+      analysisStatus.current = status.current;
+      console.log(`📊 Progresso: ${status.progress}% - ${status.current}`);
+    };
+
+    analysisStatus.current = 'Conectando ao Firebase...';
+    const results = await aiAnalyzer.analyzeAllConversations(onProgress);
+
+    analysisStatus.results = results;
+    analysisStatus.progress = 100;
+    analysisStatus.current = `Concluído! ${results.length} conversas analisadas`;
+    analysisStatus.inProgress = false;
+
+    console.log(`✅ Análise em background concluída. ${results.length} conversas analisadas`);
+
+  } catch (error) {
+    console.error('❌ Erro na análise em background:', error);
+    analysisStatus.error = error.message;
+    analysisStatus.inProgress = false;
+    analysisStatus.current = 'Erro na análise';
+  }
+}
 
 // ============================================
 // ROTA: STATUS

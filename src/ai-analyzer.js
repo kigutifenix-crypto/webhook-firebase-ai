@@ -378,7 +378,7 @@ async function saveToGoogleSheets(spreadsheetId, sheetName, analysisResults) {
 /**
  * Analisa todas as conversas do Firebase
  */
-async function analyzeAllConversations() {
+async function analyzeAllConversations(onProgress = null) {
   console.log('🔍 Iniciando análise de conversas...\n');
 
   const db = getFirebaseDb();
@@ -392,15 +392,54 @@ async function analyzeAllConversations() {
     }
 
     const conversations = snapshot.val();
+    const conversationIds = Object.keys(conversations);
     const analysisResults = [];
 
-    console.log(`📊 Encontradas ${Object.keys(conversations).length} conversas\n`);
+    console.log(`📊 Encontradas ${conversationIds.length} conversas\n`);
+
+    // Atualizar progresso inicial
+    if (onProgress) {
+      onProgress({
+        progress: 0,
+        total: conversationIds.length,
+        current: 'Iniciando análise...'
+      });
+    }
 
     // Analisar cada conversa
-    for (const [convId, convData] of Object.entries(conversations)) {
-      console.log(`⏳ Analisando conversa ${convId}...`);
-      const analysis = await analyzeConversation(convId, convData);
-      analysisResults.push(analysis);
+    for (let i = 0; i < conversationIds.length; i++) {
+      const convId = conversationIds[i];
+      const convData = conversations[convId];
+
+      const progress = Math.round(((i + 1) / conversationIds.length) * 100);
+      const currentStatus = `Analisando conversa ${i + 1}/${conversationIds.length}: ${convId}`;
+
+      console.log(`⏳ ${currentStatus}`);
+      if (onProgress) {
+        onProgress({
+          progress,
+          total: conversationIds.length,
+          current: currentStatus
+        });
+      }
+
+      try {
+        const analysis = await analyzeConversation(convId, convData);
+        analysisResults.push(analysis);
+      } catch (error) {
+        console.error(`❌ Erro ao analisar conversa ${convId}:`, error.message);
+        // Continuar com as outras conversas mesmo se uma falhar
+        analysisResults.push({
+          conversationId: convId,
+          nome: convData.sender?.name || '',
+          telefone: convData.sender?.phone_number || '',
+          categoria: 'Indefinido',
+          resumo: 'Erro na análise',
+          data_criacao: '',
+          analyzedAt: new Date().toISOString(),
+          erro: error.message
+        });
+      }
 
       // Delay aumentado para evitar rate limiting (2 segundos entre análises)
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -409,6 +448,14 @@ async function analyzeAllConversations() {
     // Salvar em Google Sheets
     if (process.env.GOOGLE_SHEETS_ID) {
       console.log('\n💾 Salvando em Google Sheets...');
+      if (onProgress) {
+        onProgress({
+          progress: 100,
+          total: conversationIds.length,
+          current: 'Salvando no Google Sheets...'
+        });
+      }
+
       await saveToGoogleSheets(
         process.env.GOOGLE_SHEETS_ID,
         process.env.GOOGLE_SHEETS_NAME || 'Análises',
@@ -417,6 +464,14 @@ async function analyzeAllConversations() {
     }
 
     console.log('\n✅ Análise concluída!');
+    if (onProgress) {
+      onProgress({
+        progress: 100,
+        total: conversationIds.length,
+        current: `Concluído! ${analysisResults.length} conversas analisadas`
+      });
+    }
+
     return analysisResults;
 
   } catch (error) {

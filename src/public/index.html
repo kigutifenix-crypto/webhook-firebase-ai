@@ -759,22 +759,54 @@
             if (!confirmation) return;
 
             try {
+                // Iniciar análise em background
                 const response = await fetch('/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
                 const data = await response.json();
 
-                if (data.sucesso) {
-                    alert('Análise de todas as conversas iniciada com sucesso!');
-                    loadConversations();
-                } else {
-                    alert('Erro na análise: ' + data.erro);
+                if (!data.sucesso) {
+                    alert('Erro ao iniciar análise: ' + data.erro);
+                    return;
                 }
+
+                alert('Análise iniciada em background! Acompanhe o progresso na página.');
+
+                // Monitorar progresso
+                monitorAnalysisProgress();
+
             } catch (error) {
                 console.error('Erro ao chamar análise:', error);
                 alert('Erro ao executar a análise. Veja o console do navegador.');
             }
+        }
+
+        // Função para monitorar o progresso da análise
+        async function monitorAnalysisProgress() {
+            const progressInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/analyze/status');
+                    const status = await response.json();
+
+                    if (!status.inProgress) {
+                        clearInterval(progressInterval);
+
+                        if (status.error) {
+                            alert('Erro na análise: ' + status.error);
+                        } else {
+                            alert(`Análise concluída! ${status.results ? status.results.length : 0} conversas analisadas.`);
+                            loadConversations(); // Recarregar conversas
+                        }
+                    } else {
+                        // Atualizar status na interface (opcional)
+                        console.log(`Análise em andamento: ${status.progress}% - ${status.current}`);
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status:', error);
+                    clearInterval(progressInterval);
+                }
+            }, 5000); // Verificar a cada 5 segundos
         }
 
         // Limpar listener quando descarregar a página
