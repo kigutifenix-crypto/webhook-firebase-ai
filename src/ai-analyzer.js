@@ -12,11 +12,12 @@ require('dotenv').config();
 // Apenas usamos o admin aqui para acessar o database
 // sem reinicializar o Firebase App.
 
-let db = null;
-if (admin.apps.length > 0) {
-  db = admin.database();
-} else {
-  console.error('❌ Firebase não inicializado. Certifique-se de que src/server.js inicializou o Firebase.');
+function getFirebaseDb() {
+  if (admin.apps.length > 0) {
+    return admin.database();
+  } else {
+    throw new Error('Firebase não inicializado. Certifique-se de que src/server.js inicializou o Firebase.');
+  }
 }
 
 // Inicializar Groq (GRATUITO) - Lazy load
@@ -344,10 +345,7 @@ async function saveToGoogleSheets(spreadsheetId, sheetName, analysisResults) {
 async function analyzeAllConversations() {
   console.log('🔍 Iniciando análise de conversas...\n');
 
-  if (!db) {
-    throw new Error('Firebase não inicializado');
-  }
-
+  const db = getFirebaseDb();
   const conversationsRef = db.ref('conversations');
 
   try {
