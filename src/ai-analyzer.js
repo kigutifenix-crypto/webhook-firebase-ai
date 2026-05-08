@@ -388,7 +388,7 @@ async function analyzeAllConversations() {
     const snapshot = await conversationsRef.get();
     if (!snapshot.exists()) {
       console.log('Nenhuma conversa encontrada no Firebase');
-      return;
+      return []; // Retornar array vazio em vez de undefined
     }
 
     const conversations = snapshot.val();
@@ -421,6 +421,7 @@ async function analyzeAllConversations() {
 
   } catch (error) {
     console.error('Erro ao analisar conversas:', error.message);
+    throw error; // Relançar o erro para que seja tratado no servidor
   }
 }
 

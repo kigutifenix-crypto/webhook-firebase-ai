@@ -4,7 +4,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
-const aiAnalyzer = require('./ai-analyzer');
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -16,6 +15,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Middleware de logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
 // Inicializar Firebase Admin
 const FIREBASE_CREDENTIALS_FILE = process.env.FIREBASE_CREDENTIALS_FILE || process.env.GOOGLE_SHEETS_CREDENTIALS_FILE || './google-credentials.json';
@@ -72,6 +77,9 @@ let db = null;
 if (admin.apps.length > 0) {
   db = admin.database();
 }
+
+// Importar ai-analyzer APÓS Firebase ser inicializado
+const aiAnalyzer = require('./ai-analyzer');
 
 // ============================================
 // VALIDAÇÃO DE WEBHOOK (Formato Toolz)
@@ -382,8 +390,10 @@ app.post('/analyze/:id', async (req, res) => {
 // ROTA: ANALISAR TODAS AS CONVERSAS
 // ============================================
 app.post('/analyze', async (req, res) => {
+  console.log('📡 Recebida requisição POST /analyze');
   try {
     if (!db) {
+      console.error('❌ Firebase não inicializado no servidor');
       return res.status(503).json({
         sucesso: false,
         erro: 'Firebase não inicializado. Configure as variáveis de ambiente.',
@@ -391,16 +401,21 @@ app.post('/analyze', async (req, res) => {
       });
     }
 
+    console.log('🔍 Iniciando análise de todas as conversas...');
     const results = await aiAnalyzer.analyzeAllConversations();
+    console.log(`✅ Análise concluída. ${results?.length || 0} conversas analisadas`);
+
     return res.status(200).json({
       sucesso: true,
-      results
+      results,
+      timestamp: new Date().toISOString()
     });
   } catch (erro) {
     console.error('❌ Erro ao analisar todas as conversas:', erro);
     return res.status(500).json({
       sucesso: false,
-      erro: erro.message
+      erro: erro.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
