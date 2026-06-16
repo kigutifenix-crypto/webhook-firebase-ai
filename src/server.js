@@ -43,7 +43,21 @@ function loadFirebaseCredentials() {
   if (envConfig.private_key && envConfig.client_email) {
     return envConfig;
   }
+  // 2. Tentar usar JSON nas variáveis de ambiente (útil em serverless)
+  const envJson = process.env.FIREBASE_CREDENTIALS_JSON || process.env.GOOGLE_SHEETS_CREDENTIALS_JSON || process.env.GOOGLE_CREDENTIALS_JSON;
+  if (envJson) {
+    try {
+      const parsed = typeof envJson === 'string' ? JSON.parse(envJson) : envJson;
+      if (parsed.private_key && parsed.client_email) {
+        return parsed;
+      }
+      throw new Error('Credenciais em env não contém private_key/client_email válidos.');
+    } catch (error) {
+      throw new Error(`Erro ao parsear credenciais da env: ${error.message}`);
+    }
+  }
 
+  // 3. Tentar ler arquivo de credenciais (apenas para desenvolvimento local)
   const credentialsPath = path.resolve(__dirname, FIREBASE_CREDENTIALS_FILE);
   if (fs.existsSync(credentialsPath)) {
     try {
@@ -57,7 +71,7 @@ function loadFirebaseCredentials() {
     }
   }
 
-  throw new Error('Credenciais Firebase não encontradas. Configure FIREBASE_PRIVATE_KEY/FIREBASE_CLIENT_EMAIL ou FIREBASE_CREDENTIALS_FILE.');
+  throw new Error('Credenciais Firebase não encontradas. Configure FIREBASE_PRIVATE_KEY/FIREBASE_CLIENT_EMAIL ou FIREBASE_CREDENTIALS_FILE ou FIREBASE_CREDENTIALS_JSON.');
 }
 
 try {

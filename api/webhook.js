@@ -38,7 +38,19 @@ function initializeFirebase() {
       };
     }
 
-    // 2. Tentar usar arquivo de credenciais (em desenvolvimento local)
+    // 2. Tentar usar JSON nas variáveis de ambiente (útil em serverless)
+    if (!credential) {
+      const envJson = process.env.FIREBASE_CREDENTIALS_JSON || process.env.GOOGLE_SHEETS_CREDENTIALS_JSON || process.env.GOOGLE_CREDENTIALS_JSON;
+      if (envJson) {
+        try {
+          credential = typeof envJson === 'string' ? JSON.parse(envJson) : envJson;
+        } catch (err) {
+          console.warn('Variável de ambiente de credenciais inválida:', err.message);
+        }
+      }
+    }
+
+    // 3. Tentar usar arquivo de credenciais (em desenvolvimento local)
     if (!credential) {
       const credPath = path.resolve(__dirname, '../google-credentials.json');
       if (fs.existsSync(credPath)) {
