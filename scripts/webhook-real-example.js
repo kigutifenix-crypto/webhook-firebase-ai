@@ -22,7 +22,7 @@ const { URL } = require('url');
 const webhookPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'webhook-real-example.json'), 'utf8'));
 
 // URL do webhook; use primeiro argumento CLI ou NGROK_WEBHOOK_URL, caso contrário localhost
-const defaultWebhookUrl = process.env.NGROK_WEBHOOK_URL || 'http://localhost:3000/webhook';
+const defaultWebhookUrl = process.env.NGROK_WEBHOOK_URL || 'https://web-production-0bd2f.up.railway.app/webhook';
 const webhookUrl = process.argv[2] || defaultWebhookUrl;
 const parsedUrl = new URL(webhookUrl);
 
@@ -76,6 +76,8 @@ function sendWebhook() {
         
       } catch (e) {
         console.log('❌ Erro ao processar resposta:', e.message);
+        console.log('📄 Resposta bruta do servidor:');
+        console.log(responseData);
       }
     });
   });

@@ -1,16 +1,14 @@
 /**
- * Analisador de Conversas com Groq (IA GRATUITA)
+ * Analisador de Conversas com Gemini/OpenAI
  * Extrai informações das conversas e salva em Google Sheets
  */
 
 const admin = require('firebase-admin');
-const Groq = require('groq-sdk');
 const { google } = require('googleapis');
 require('dotenv').config();
 
-// O app Firebase já é inicializado em src/server.js
-// Apenas usamos o admin aqui para acessar o database
-// sem reinicializar o Firebase App.
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gemini-1.5';
 
 function getFirebaseDb() {
   if (admin.apps.length > 0) {
@@ -20,22 +18,16 @@ function getFirebaseDb() {
   }
 }
 
-// Inicializar Groq (GRATUITO) - Lazy load
-let groq = null;
-
-function getGroqClient() {
-  if (!groq) {
-    if (!process.env.GROQ_API_KEY) {
-      throw new Error('GROQ_API_KEY não configurada. Configure a variável de ambiente GROQ_API_KEY no Railway.');
-    }
-    groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-    });
+function getOpenAIHeaders() {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY não configurada. Configure a variável de ambiente OPENAI_API_KEY no Railway ou em .env.');
   }
-  return groq;
-}
 
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  return {
+    Authorization: `Bearer ${OPENAI_API_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
 
 // Inicializar Google Sheets
 const sheets = google.sheets('v4');
@@ -131,19 +123,57 @@ function buildFallbackSummary(conversationText, metadata, analysisResult) {
 }
 
 /**
- * Chamada ao Groq com retry exponencial para rate limiting
+ * Chamada ao OpenAI/Gemini com retry exponencial para rate limiting
  */
-async function callGroqWithRetry(messages, maxRetries = 5) {
+function parseOpenAIResponseText(data) {
+  if (!data) return '';
+  if (typeof data.output_text === 'string' && data.output_text.trim()) {
+    return data.output_text.trim();
+  }
+  if (Array.isArray(data.output)) {
+    const text = data.output
+      .map(output => {
+        if (typeof output === 'string') return output;
+        if (Array.isArray(output.content)) {
+          return output.content.map(part => part.text || '').join('');
+        }
+        return '';
+      })
+      .join('');
+    if (text.trim()) return text.trim();
+  }
+  const alt = data.choices?.[0]?.message?.content;
+  if (typeof alt === 'string' && alt.trim()) return alt.trim();
+  if (Array.isArray(alt)) return alt.map(item => item.text || '').join('').trim();
+  return '';
+}
+
+async function callOpenAIWithRetry(messages, maxRetries = 5) {
   let lastError = null;
-  
+  const payload = {
+    model: OPENAI_MODEL,
+    messages,
+    temperature: 0.1,
+    max_output_tokens: 512
+  };
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await getGroqClient().chat.completions.create({
-        messages,
-        model: GROQ_MODEL,
-        temperature: 0.1,
-        max_tokens: 512, // Reduzido de 1024 para economizar tokens
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: getOpenAIHeaders(),
+        body: JSON.stringify(payload)
       });
+      const data = await response.json();
+
+      if (!response.ok) {
+        const error = new Error(data.error?.message || `OpenAI API error ${response.status}`);
+        error.status = response.status;
+        error.code = data.error?.type || data.error?.code || null;
+        throw error;
+      }
+
+      return data;
     } catch (error) {
       lastError = error;
       
@@ -165,7 +195,7 @@ async function callGroqWithRetry(messages, maxRetries = 5) {
 }
 
 /**
- * Analisa uma conversa com Groq
+ * Analisa uma conversa com Gemini
  */
 async function analyzeConversation(conversationId, conversationData) {
   // Montar o texto da conversa com diversos campos possíveis
@@ -221,7 +251,7 @@ async function analyzeConversation(conversationId, conversationData) {
     'Retorne APENAS o JSON, sem markdown ou explicações.';
 
   try {
-    const chatCompletion = await callGroqWithRetry([
+    const responseData = await callOpenAIWithRetry([
       {
         role: 'system',
         content: 'Você é um extrator de dados. Responda apenas com JSON válido e nada mais.'
@@ -232,7 +262,7 @@ async function analyzeConversation(conversationId, conversationData) {
       },
     ]);
 
-    const responseText = chatCompletion.choices[0]?.message?.content || '';
+    const responseText = parseOpenAIResponseText(responseData);
 
     // Limpar resposta (remover markdown se houver)
     const jsonText = responseText.replace(/```json\n?|\n?```/g, '').trim();
@@ -305,7 +335,7 @@ async function analyzeConversation(conversationId, conversationData) {
     // Verificar se é erro de rate limit
     const isRateLimit = error.status === 429 || error.code === 'rate_limit_exceeded' || error.message?.includes('rate_limit');
     if (isRateLimit) {
-      console.error(`❌ Erro ao analisar conversa ${conversationId}: Rate limit do Groq atingido. ${error.message}`);
+      console.error(`❌ Erro ao analisar conversa ${conversationId}: Rate limit do Gemini/OpenAI atingido. ${error.message}`);
     } else {
       console.error(`❌ Erro ao analisar conversa ${conversationId}:`, error.message);
     }

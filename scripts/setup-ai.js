@@ -17,21 +17,20 @@ const question = (prompt) => new Promise(resolve => rl.question(prompt, resolve)
 
 async function setupGemini() {
   console.log(`
-╔═══════════════════════════════════════════════════════╗
-║     Configurar Groq API (GRATUITA)                     ║
-╚═══════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════════╗
+║     Configurar Gemini/OpenAI + Google Sheets                   ║
+╚════════════════════════════════════════════════════════════════╝
   `);
 
   const envPath = path.join(__dirname, '../.env');
   let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
 
-  // Obter chave Groq
-  console.log('1️⃣  Obtenha sua chave API em: https://console.groq.com/keys');
-  console.log('   (Clique em "Create API Key" → Copie)\n');
+  console.log('1️⃣  Obtenha sua chave API em: https://platform.openai.com/account/api-keys');
+  console.log('   (Clique em "Create new secret key" → Copie)\n');
   
-  const groqKey = await question('Cole aqui sua chave Groq: ').catch(() => '');
+  const openaiKey = await question('Cole aqui sua chave OpenAI: ').catch(() => '');
   
-  if (!groqKey) {
+  if (!openaiKey) {
     console.log('\n❌ Chave não fornecida. Abortando.');
     rl.close();
     return;
@@ -65,10 +64,13 @@ GOOGLE_SHEETS_NAME=Análises`;
   }
 
   // Atualizar .env
-  if (!envContent.includes('GROQ_API_KEY')) {
-    envContent += `\n# ============================================\n# Groq (IA gratuita para análise de conversas)\n# ============================================\nGROQ_API_KEY=${groqKey}${sheetsConfig}\n`;
+  if (!envContent.includes('OPENAI_API_KEY')) {
+    envContent += `\n# ============================================\n# Gemini/OpenAI\n# ============================================\nOPENAI_API_KEY=${openaiKey}\nOPENAI_MODEL=gemini-1.5${sheetsConfig}\n`;
   } else {
-    envContent = envContent.replace(/GROQ_API_KEY=.*/, `GROQ_API_KEY=${groqKey}`);
+    envContent = envContent.replace(/OPENAI_API_KEY=.*/, `OPENAI_API_KEY=${openaiKey}`);
+    if (!envContent.includes('OPENAI_MODEL=')) {
+      envContent += '\nOPENAI_MODEL=gemini-1.5\n';
+    }
   }
 
   fs.writeFileSync(envPath, envContent);

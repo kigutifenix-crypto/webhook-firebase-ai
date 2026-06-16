@@ -12,7 +12,7 @@
     "hmac_verified": false,
     "pubsub_token": "LAhyDWstB78inVPWXEuyU76D"
   },
-  "id": 4384,
+  "id": 4507,
   "inbox_id": 2478,
   "messages": [
     {
@@ -20,7 +20,7 @@
       "content": "[AGENT] Temos sim, trabalhamos com a Kikos, principalmente na linha de cardio e também alguns modelos de musculação.\n\nVocê está procurando qual equipamento específico da Kikos? É para essa mesma academia em Cotia?",
       "account_id": 1158,
       "inbox_id": 2478,
-      "conversation_id": 4384,
+      "conversation_id": 4507,
       "message_type": 1,
       "created_at": 1777296238,
       "updated_at": "2026-04-27T13:23:58.214Z",

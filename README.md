@@ -18,7 +18,7 @@ Website para receber webhooks da Toolz e salvar no Firebase Realtime Database.
 ├── docs/                      # Documentação completa
 │   ├── README.md              # Documentação técnica
 │   ├── SETUP.md               # Instruções de setup
-│   ├── AI_SETUP.md            # Setup IA gratuita (Groq)
+│   ├── AI_SETUP.md            # Setup IA com Gemini/OpenAI
 │   ├── GOOGLE_SHEETS_SETUP.md # Guia Google Sheets API
 │   ├── GOOGLE_API_GUIA_VISUAL.md # Guia visual passo-a-passo
 │   ├── TROUBLESHOOTING.md    # Solução de problemas
@@ -55,7 +55,7 @@ Website para receber webhooks da Toolz e salvar no Firebase Realtime Database.
 
 ## 🤖 IA para Análise Automática (OPCIONAL)
 
-Para analisar conversas automaticamente com IA gratuita:
+Para analisar conversas automaticamente com Gemini/OpenAI:
 
 ```bash
 npm run setup:ai
@@ -75,9 +75,9 @@ Para salvar análises em planilhas automaticamente:
 1. **Leia o guia visual:** [docs/GOOGLE_API_GUIA_VISUAL.md](docs/GOOGLE_API_GUIA_VISUAL.md)
 2. **Ou o guia completo:** [docs/GOOGLE_SHEETS_SETUP.md](docs/GOOGLE_SHEETS_SETUP.md)
 3. **Use Service Account** (dados do aplicativo) - não OAuth!
-4. **Defina o modelo Groq em `.env` se precisar:**
+4. **Defina o modelo Gemini/OpenAI em `.env` se precisar:**
    ```bash
-   GROQ_MODEL=llama-3.1-8b-instant
+   OPENAI_MODEL=gemini-1.5
    ```
 5. **Execute setup:**
    ```bash
