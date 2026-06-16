@@ -5,6 +5,8 @@
 
 const admin = require('firebase-admin');
 const { google } = require('googleapis');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -42,7 +44,18 @@ if (process.env.GOOGLE_SHEETS_CREDENTIALS_JSON) {
     console.error('❌ GOOGLE_SHEETS_CREDENTIALS_JSON inválido:', error.message);
   }
 } else if (process.env.GOOGLE_SHEETS_CREDENTIALS_FILE) {
-  googleSheetsAuthOptions.keyFile = process.env.GOOGLE_SHEETS_CREDENTIALS_FILE;
+  // Only use a keyFile if the file actually exists on disk (avoid /var/task errors on serverless)
+  try {
+    const candidate = process.env.GOOGLE_SHEETS_CREDENTIALS_FILE;
+    const resolved = path.isAbsolute(candidate) ? candidate : path.resolve(process.cwd(), candidate);
+    if (fs.existsSync(resolved)) {
+      googleSheetsAuthOptions.keyFile = resolved;
+    } else {
+      console.warn(`GOOGLE_SHEETS_CREDENTIALS_FILE is set but file not found at ${resolved}. Ignoring keyFile; set GOOGLE_SHEETS_CREDENTIALS_JSON for serverless.`);
+    }
+  } catch (err) {
+    console.warn('Erro ao verificar GOOGLE_SHEETS_CREDENTIALS_FILE:', err.message);
+  }
 }
 
 const auth = new google.auth.GoogleAuth(googleSheetsAuthOptions);
