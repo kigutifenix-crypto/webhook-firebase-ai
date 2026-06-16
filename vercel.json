@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "env": [
+    "FIREBASE_PROJECT_ID",
+    "FIREBASE_PRIVATE_KEY",
+    "FIREBASE_CLIENT_EMAIL",
+    "FIREBASE_DATABASE_URL",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL",
+    "GOOGLE_SHEETS_ID",
+    "GOOGLE_SHEETS_CREDENTIALS_FILE"
+  ],
+  "functions": {
+    "api/*.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}

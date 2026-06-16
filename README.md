@@ -53,6 +53,33 @@ Website para receber webhooks da Toolz e salvar no Firebase Realtime Database.
    node scripts/webhook-real-example.js
    ```
 
+## 🌐 Deploy no Vercel
+
+Para fazer deploy na Vercel com a URL `https://planilhasfenix.vercel.app/`:
+
+```bash
+# 1. Instalar Vercel CLI
+npm i -g vercel
+
+# 2. Fazer login
+vercel login
+
+# 3. Deploy
+vercel --prod
+```
+
+**📡 URL do Webhook:**
+```
+https://planilhasfenix.vercel.app/api/webhook
+```
+
+Para mais detalhes, leia: [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md)
+
+Ou execute o script de setup:
+```bash
+node scripts/vercel-setup.js
+```
+
 ## 🤖 IA para Análise Automática (OPCIONAL)
 
 Para analisar conversas automaticamente com Gemini/OpenAI:
